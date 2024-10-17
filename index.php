@@ -1,130 +1,198 @@
 <?php
-require_once 'App/Infrastructure/sdbh.php';
 
-use sdbh\sdbh;
+require_once 'App/Main.php';
 
-$dbh = new sdbh();
+use App\Main;
+
+$main = new Main();
+
+$clients = $main->getAllClients();
+$merchandises = $main->getAllMerchandise();
+$orders = $main->getAllOrders();
+
 ?>
-<html>
+
+<!doctype html>
+<html lang="en">
 <head>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
-          crossorigin="anonymous">
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="assets/css/style.css" rel="stylesheet"/>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
-            crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <title>CSV</title>
 </head>
 <body>
-<div class="container">
-    <div class="row row-header">
-        <div class="col-12" id="count">
-            <img src="assets/img/logo.png" alt="logo" style="max-height:50px"/>
-            <h1>Прокат Y</h1>
+
+
+<div class="container align-items-center">
+    <div class="row my-5 d-flex">
+        <div class="btn-group">
+            <a  href="/" class="btn btn-dark">Главная</a>
+            <a href="/sqlpage.php" class="btn btn-outline-dark">SQL</a>
+            <a href="/script_code.php" class="btn btn-outline-dark">Код скрипта</a>
+            <a href="/task_descriprion.php" class="btn btn-outline-dark">Описание задачи</a>
         </div>
     </div>
 
-    <div class="row row-form">
-        <div class="col-12">
-            <form action="App/calculate.php" method="POST" id="form">
+        <div class="col-12 col-md-6 col-lg-4 mx-auto">
+            <div class="card ">
+                <div class="card-header">
+                    Загрузка CSV файла
+                </div>
+                <div class="card-body">
+                    <form action="App/Main.php" method="post" enctype="multipart/form-data">
 
-                <?php $products = $dbh->make_query('SELECT * FROM a25_products');
-                if (is_array($products)) { ?>
-                    <label class="form-label" for="product">Выберите продукт:</label>
-                    <select class="form-select" name="product" id="product">
-                        <?php foreach ($products as $product) {
-                            $name = $product['NAME'];
-                            $price = $product['PRICE'];
-                            $tarif = $product['TARIFF'];
-                            ?>
-                            <option value="<?= $product['ID']; ?>"><?= $name; ?></option>
-                        <?php } ?>
-                    </select>
-                <?php } ?>
-
-                <label for="customRange1" class="form-label" id="count">Количество дней:</label>
-                <input type="number" name="days" class="form-control" id="customRange1" min="1" max="30">
-
-                <?php $services = unserialize($dbh->mselect_rows('a25_settings', ['set_key' => 'services'], 0, 1, 'id')[0]['set_value']);
-                if (is_array($services)) {
-                    ?>
-                    <label for="customRange1" class="form-label">Дополнительно:</label>
-                    <?php
-                    $index = 0;
-                    foreach ($services as $k => $s) {
-                        ?>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="services[]" value="<?= $s; ?>"
-                                   id="flexCheck<?= $index; ?>">
-                            <label class="form-check-label" for="flexCheck<?= $index; ?>">
-                                <?= $k ?>: <?= $s ?>
-                            </label>
+                        <div class="input-group mb-3">
+                            <input type="file" name="file" accept=".csv" class="form-control" id="inputGroupFile02">
                         </div>
-                        <?php $index++;
-                    } ?>
-                <?php } ?>
+                        <div class="d-flex justify-content-between">
+                            <button class="btn btn-primary" type="submit">Загрузить</button>
+                            <a href="App/storage/csv_example/orders.csv" class="btn btn-dark">Скачать пример файла</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
 
-                <button type="submit" class="btn btn-primary">Рассчитать</button>
-            </form>
+    <div class="row mt-3 g-3">
+        <div class="col-12 col-md-12 col-lg-8">
+            <div class="card m-auto">
+                <div class="card-header d-flex justify-content-between">
+                    Заказы
+                    <div class="d-flex">
+                        <form action="App/Main.php" method="post">
+                            <button class="btn btn-outline-danger" name="clear_orders">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
 
-            <h5>Итоговая стоимость: <span id="total-price"></span> <i id="total-price-CNY" hidden
-                                                                      class="bi bi-currency-yen text-secondary fs-6 "
-                                                                      data-bs-toggle="tooltip" data-bs-html="true"
-                                                                      data-bs-title="...">
-
-                </i>
-            </h5>
+                        <button class="btn btn-outline-dark ms-2" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                            <i class="bi bi-stars"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" style="max-height: 500px ; overflow-y: auto;">
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Товар</th>
+                                <th scope="col">Клиент</th>
+                                <th scope="col">Комментарий</th>
+                                <th scope="col">Статус</th>
+                                <th scope="col">Дата заказа</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($orders as $order): ?>
+                                <tr>
+                                    <th scope="row"><?= $order['id'] ?></th>
+                                    <td><?= $order['item'] ?></td>
+                                    <td><?= $order['client'] ?></td>
+                                    <td><?= $order['comment'] ?></td>
+                                    <td><?= $order['status'] ?></td>
+                                    <td><?= $order['order_date'] ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-12 col-lg-4">
+            <div class="col">
+                <div class="card m-auto h-100">
+                    <div class="card-header">
+                        Товары
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive" style="max-height: 195px ; overflow-y: auto;">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Наименование</th>
+                                    <th scope="col">Стоимость</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($merchandises as $merchandise): ?>
+                                    <tr>
+                                        <th scope="row"><?= $merchandise['id'] ?></th>
+                                        <td><?= $merchandise['name'] ?></td>
+                                        <td><?= $merchandise['price'] ?> руб.</td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col mt-3">
+                <div class="card h-auto">
+                    <div class="card-header">
+                        Клиенты
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive" style="max-height: 230px ; overflow-y: auto;">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Имя</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($clients as $client): ?>
+                                    <tr>
+                                        <th scope="row"><?= $client['id'] ?></th>
+                                        <td><?= $client['name'] ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="exampleModalLabel">Генерация заказов</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form action="App/Main.php" method="post">
+                            <div class="d-flex">
+                                <input class="form-control w-25" type="number" id="order_count" name="order_count"
+                                       min="1"
+                                       required>
+                                <button class="btn btn-outline-dark m-auto" type="submit">Сгенерировать заказы</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <p class="text-secondary">Вы можете сгенерировать случайные заказы. Задайте необходимое
+                            количество и нажмите кнопку.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+
 </div>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
-        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
-        integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
-        crossorigin="anonymous"></script>
-<script src="https://www.cbr-xml-daily.ru/money.js"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-
-<script>
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
-</script>
-
-<script>
-    $(document).ready(function () {
-        $("#form").submit(function (event) {
-            event.preventDefault();
-
-            $.ajax({
-                url: 'App/calculate.php',
-                type: 'POST',
-                data: $(this).serialize(),
-                success: function (response) {
-                    const result = JSON.parse(response);
-                    if (result.error) {
-                        $("#total-price").text(result.error);
-                        $("#total-price-CNY").attr('hidden');
-                        return;
-                    }
-
-                    $("#total-price").text(result.total_price);
-
-                    if (result.total_price_cny !== null) {
-                        $("#total-price-CNY").attr('data-bs-title', result.total_price_cny + ' ¥');
-                        $("#total-price-CNY").removeAttr('hidden');
-                        $("#total-price-CNY").tooltip('dispose').tooltip();
-                    } else {
-                        $("#total-price-CNY").attr('hidden');
-                    }
-                },
-                error: function () {
-                    $("#total-price").text('Ошибка при расчете');
-                    $("#total-price-CNY").attr('hidden');
-                }
-            });
-        });
-    });
-</script>
-
 </body>
 </html>
